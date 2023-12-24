@@ -1,11 +1,24 @@
-import { createContext, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-import FeedbackData from "../data/FeedbackData";
+import { createContext, useState, useEffect } from "react";
 
 const FeedbackContext = createContext();
 
 export const FeedbackProvider = ({ children }) => {
-  const [feedback, setFeedback] = useState(FeedbackData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [feedback, setFeedback] = useState([]);
+
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+  const fetchFeedback = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/feedback`);
+      const data = await response.json();
+      setFeedback(data);
+      setIsLoading(false);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const [editFeedback, setEditFeedback] = useState({
     item: {},
@@ -19,20 +32,37 @@ export const FeedbackProvider = ({ children }) => {
     });
   };
 
-  const updateFeedback = (id, updItem) =>{
-    setFeedback(
-        feedback.map((item)=>(item.id === id ? {...item, ...updItem}: item))
-    )
-  }
+  const updateFeedback = async (id, updItem) => {
+    const response = await fetch(`http://localhost:3000/api/feedback/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updItem),
+    });
+    const data = await response.json();
 
-  const addFeedHandler = (newfeedback) => {
-    newfeedback.id = uuidv4();
-    setFeedback([newfeedback, ...feedback]);
+    setFeedback(
+      feedback.map((item) => (item._id === id ? { ...item, ...updItem } : item))
+    );
+  };
+
+  const addFeedHandler = async (newfeedback) => {
+    const response = await fetch(`http://localhost:3000/api/feedback`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newfeedback),
+    });
+    const data = await response.json();
+
+    setFeedback([data, ...feedback]);
   };
 
   const deleteHandler = (id) => {
     if (window.confirm("Are you sure that you want to delete?")) {
-      setFeedback(feedback.filter((item) => item.id !== id));
+      setFeedback(feedback.filter((item) => item._id !== id));
     }
   };
 
@@ -45,6 +75,7 @@ export const FeedbackProvider = ({ children }) => {
         editFeedback,
         feedbackEdit,
         updateFeedback,
+        isLoading,
       }}
     >
       {children}

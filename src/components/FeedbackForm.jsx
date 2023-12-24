@@ -3,28 +3,32 @@ import { useState, useContext, useEffect } from "react";
 import Button from "./shared/Button";
 import RatingSelect from "./RatingSelect";
 import FeedbackContext from "../context/FeedbackContext";
+import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 function FeedbackForm() {
-  const [text, setText] = useState("");
-  const { addFeedHandler, editFeedback, updateFeedback } = useContext(FeedbackContext);
+  const [title, setTitle] = useState("");
+  const { addFeedHandler, editFeedback, updateFeedback } =
+    useContext(FeedbackContext);
   const [btnDisabled, setbtnDisabled] = useState(true);
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState(10);
+  const [state, dispatch] = useAuth()
+
+  const isAuthenticated = state.accessToken !== null
 
   useEffect(() => {
-    if(editFeedback.edit === true){
-        setbtnDisabled(false)
-        setText(editFeedback.item.text)
+    if (editFeedback.edit === true) {
+      setbtnDisabled(false);
+      setTitle(editFeedback.item.title);
     }
-
-  }, [editFeedback])
-
+  }, [editFeedback]);
 
   const handleTextChange = (e) => {
-    if (text === "") {
+    if (title === "") {
       setbtnDisabled(true);
       setMessage(null);
-    } else if (text !== "" && text.trim().length <= 10) {
+    } else if (title !== "" && title.trim().length <= 10) {
       setbtnDisabled(true);
       setMessage("Review must be atleast 10 characters");
     } else {
@@ -32,45 +36,52 @@ function FeedbackForm() {
       setMessage(null);
     }
 
-    setText(e.target.value);
+    setTitle(e.target.value);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (text.trim().length > 10) {
+    if (title.trim().length > 10) {
       const newFeedBack = {
-        text,
+        title,
         rating,
       };
 
-      if (editFeedback.edit === true){
-        updateFeedback(editFeedback.item.id, newFeedBack)
-      } else{
+      if (editFeedback.edit === true) {
+        updateFeedback(editFeedback.item._id, newFeedBack);
+      } else {
         addFeedHandler(newFeedBack);
       }
-      
 
-      setText("");
+      setTitle("");
     }
   };
+
+  const postForm = (<form onSubmit={handleSubmit}>
+    <h3>How would you like to rate our service?</h3>
+    <RatingSelect select={(rating) => setRating(rating)} />
+    <div className="input-group">
+      <input
+        type="text"
+        onChange={handleTextChange}
+        value={title}
+        placeholder="Write a review"
+      />
+      <Button type="submit" isDisabled={btnDisabled} version={"tertiary"}>
+        Send
+      </Button>
+      {message && <div className="message">{message}</div>}
+    </div>
+  </form>
+  )
   return (
     <Card>
-      <form onSubmit={handleSubmit}>
-        <h3>How would you like to rate our service?</h3>
-        <RatingSelect select={(rating) => setRating(rating)} />
-        <div className="input-group">
-          <input
-            type="text"
-            onChange={handleTextChange}
-            value={text}
-            placeholder="Write a review"
-          />
-          <Button type="submit" isDisabled={btnDisabled} version={"tertiary"}>
-            Send
-          </Button>
-          {message && <div className="message">{message}</div>}
-        </div>
-      </form>
+      {isAuthenticated ? (postForm) : (<div>
+        <h3>Please login to leave a feedback</h3>
+        <Link to="/login">
+        <Button>Login</Button></Link>
+      </div>
+        )}
     </Card>
   );
 }

@@ -8,13 +8,13 @@ function FeedbackItem({ feedbody }) {
   return (
     <Card>
       <div className="num-display">{feedbody.rating}</div>
-      <button onClick={() => deleteHandler(feedbody.id)} className="close">
+      <button onClick={() => deleteHandler(feedbody._id)} className="close">
         <BsX />
       </button>
       <button onClick={() => feedbackEdit(feedbody)} className="edit">
         <BsPencilSquare />
       </button>
-      <div className="text-display">{feedbody.text}</div>
+      <div className="text-display">{feedbody.title}</div>
     </Card>
   );
 }
